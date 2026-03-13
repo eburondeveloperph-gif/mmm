@@ -153,8 +153,13 @@ export class GenAILiveClient {
       this.emitter.emit('error', new ErrorEvent('Client is not connected'));
       return;
     }
-    this.session.sendClientContent({ turns: parts, turnComplete });
-    this.log(`client.send`, parts);
+    try {
+      this.session.sendClientContent({ turns: parts, turnComplete });
+      this.log(`client.send`, parts);
+    } catch (e) {
+      console.error('Error sending client content:', e);
+      this.disconnect();
+    }
   }
 
   public sendRealtimeInput(chunks: Array<{ mimeType: string; data: string }>) {
@@ -163,9 +168,15 @@ export class GenAILiveClient {
       this.emitter.emit('error', new ErrorEvent('Client is not connected'));
       return;
     }
-    chunks.forEach(chunk => {
-      this.session!.sendRealtimeInput({ media: chunk });
-    });
+    try {
+      chunks.forEach(chunk => {
+        this.session!.sendRealtimeInput({ media: chunk });
+      });
+    } catch (e) {
+      console.error('Error sending realtime input:', e);
+      this.disconnect();
+      return;
+    }
 
     let hasAudio = false;
     let hasVideo = false;
@@ -189,13 +200,19 @@ export class GenAILiveClient {
       this.emitter.emit('error', new ErrorEvent('Client is not connected'));
       return;
     }
-    if (
-      toolResponse.functionResponses &&
-      toolResponse.functionResponses.length
-    ) {
-      this.session.sendToolResponse({
-        functionResponses: toolResponse.functionResponses!,
-      });
+    try {
+      if (
+        toolResponse.functionResponses &&
+        toolResponse.functionResponses.length
+      ) {
+        this.session.sendToolResponse({
+          functionResponses: toolResponse.functionResponses!,
+        });
+      }
+    } catch (e) {
+      console.error('Error sending tool response:', e);
+      this.disconnect();
+      return;
     }
 
     this.log(`client.toolResponse`, { toolResponse });
